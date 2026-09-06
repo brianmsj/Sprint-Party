@@ -454,6 +454,24 @@ export function addStory(room: Room, input: AddStoryInput): Room {
   };
 }
 
+/**
+ * Appends a batch of stories in the given order (used to seed a room from a
+ * Planning Queue). Queue order is preserved; if nothing is active yet, the first
+ * appended story becomes active. The room is marked `flow: "queue"` because a
+ * batch seed is always queue-driven — when it is exhausted the room shows the
+ * "Planning complete" summary rather than an add-story prompt.
+ */
+export function addStories(room: Room, inputs: AddStoryInput[]): Room {
+  if (inputs.length === 0) return room;
+  const built = inputs.map(buildStory);
+  return {
+    ...room,
+    flow: "queue",
+    stories: [...room.stories, ...built],
+    activeStoryId: room.activeStoryId ?? built[0].id,
+  };
+}
+
 function mapActiveStory(room: Room, fn: (story: Story) => Story): Room {
   if (!room.activeStoryId) return room;
   return {

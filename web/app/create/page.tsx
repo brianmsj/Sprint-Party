@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Brand } from "@/app/components/Brand";
 import { createRoom, type CreateRoomInput } from "@/app/lib/rooms";
+import { rememberHostName, withRoomParam } from "@/app/lib/session";
 
 type FieldErrors = Partial<Record<keyof CreateRoomInput, string>>;
 
@@ -41,8 +42,12 @@ export default function CreateRoomPage() {
     if (Object.values(nextErrors).some(Boolean)) return;
 
     setSubmitting(true);
-    const room = createRoom(form);
-    router.push(`/room/${room.slug}`);
+    rememberHostName(form.hostName);
+    // ServiceNow-first flow: create the session now, then send the host to pick
+    // ServiceNow stories. The room slug rides along so those stories start in
+    // this same room — no second room is created.
+    const room = createRoom({ ...form, flow: "queue" });
+    router.push(withRoomParam("/servicenow/stories", room.slug));
   }
 
   return (
@@ -57,15 +62,16 @@ export default function CreateRoomPage() {
 
         <div className="py-12 sm:py-16">
           <div className="mb-5 inline-flex rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">
-            New room · No signup required
+            New SprintParty · No signup required
           </div>
 
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-            Create a Room
+            Create a SprintParty
           </h1>
           <p className="mt-4 max-w-xl text-lg leading-8 text-slate-600">
-            A room is your team&apos;s planning session. Create it once, then add
-            stories to estimate one at a time — the room link stays the same.
+            A SprintParty is your team&apos;s refinement session. Name it, then
+            pick the stories to refine straight from your ServiceNow backlog —
+            the session link stays the same.
           </p>
 
           <form
@@ -112,12 +118,12 @@ export default function CreateRoomPage() {
               disabled={submitting}
               className="mt-6 w-full rounded-xl bg-blue-600 px-6 py-4 text-base font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70 sm:text-lg"
             >
-              {submitting ? "Creating room…" : "Create Room"}
+              {submitting ? "Setting up…" : "Choose ServiceNow stories →"}
             </button>
 
             <p className="mt-4 text-center text-sm text-slate-500">
-              Your room is stored in this browser for now. Realtime multiplayer
-              is coming soon.
+              Next: pick stories from ServiceNow and build your Planning Queue.
+              Your session is stored in this browser for now.
             </p>
           </form>
         </div>

@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
-import type { FormEvent } from "react";
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Brand } from "@/app/components/Brand";
+import { AiReviewPanel } from "@/app/components/AiReviewPanel";
+import { withRoomParam } from "@/app/lib/session";
 import {
   FIBONACCI_DECK,
   activeStory,
-  addStory,
   completeActiveStory,
   completedStories,
   criteriaLines,
@@ -24,7 +24,6 @@ import {
   storyPosition,
   subscribeRooms,
   voteConsensus,
-  type AddStoryInput,
   type FibonacciCard,
   type Room,
   type Story,
@@ -35,7 +34,6 @@ const HOST_ID = "host";
 export default function RoomPage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
-  const [showAddForm, setShowAddForm] = useState(false);
 
   // The room store is the source of truth; this also picks up writes from other
   // tabs today and is the seam for Supabase realtime later.
@@ -135,23 +133,14 @@ export default function RoomPage() {
             mutateRoom((current) => setRevealed(current, !story.revealed))
           }
           onNewRound={() => mutateRoom(resetActiveVotes)}
-          onNextStory={() => {
-            setShowAddForm(false);
-            mutateRoom(completeActiveStory);
-          }}
+          onNextStory={() => mutateRoom(completeActiveStory)}
         />
-      ) : planningComplete && !showAddForm ? (
-        <PlanningCompleteView
-          stories={history}
-          onAddAnother={() => setShowAddForm(true)}
-        />
+      ) : planningComplete ? (
+        <PlanningCompleteView stories={history} roomSlug={room.slug} />
       ) : (
-        <AddStoryView
+        <EmptySessionView
+          roomSlug={room.slug}
           hasHistory={history.length > 0}
-          onAdd={(input) => {
-            setShowAddForm(false);
-            mutateRoom((current) => addStory(current, input));
-          }}
         />
       )}
 
@@ -210,7 +199,8 @@ function ActiveStoryView({
     isQueue && !hasMorePending ? "Finish & view summary →" : "Next Story →";
 
   return (
-    <div className="grid gap-8 pb-12 lg:grid-cols-[1.1fr_1fr] lg:items-start">
+    <div className="flex flex-col gap-8 pb-12 xl:flex-row xl:items-start">
+      <div className="grid flex-1 gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-start">
       {/* Story details */}
       <section className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-center gap-2">
@@ -369,124 +359,56 @@ function ActiveStoryView({
             : "Voting runs locally in this browser. Realtime multiplayer and an independent AI estimate are coming next."}
         </p>
       </section>
+      </div>
+
+      {/* SprintParty AI: refinement assist. On-demand only — never auto-runs. */}
+      <div className="xl:w-[380px] xl:flex-shrink-0">
+        <AiReviewPanel
+          key={story.id}
+          number={story.origin.externalNumber ?? ""}
+          shortDescription={story.title}
+          description={story.userStory}
+          acceptanceCriteria={story.acceptanceCriteria}
+        />
+      </div>
     </div>
   );
 }
 
 /* -------------------------------------------------------------------------- */
 
-const EMPTY_STORY: AddStoryInput = {
-  title: "",
-  userStory: "",
-  acceptanceCriteria: "",
-};
-
-type StoryErrors = Partial<Record<keyof AddStoryInput, string>>;
-
-function AddStoryView({
+/**
+ * Shown when the session has no story being estimated and the ServiceNow queue
+ * has not been exhausted yet (e.g. the room was just created, or a manual/legacy
+ * room ran out of stories). In the ServiceNow-first flow, stories come from the
+ * backlog — never a hand-typed form — so this points the host back to selection.
+ */
+function EmptySessionView({
+  roomSlug,
   hasHistory,
-  onAdd,
 }: {
+  roomSlug: string;
   hasHistory: boolean;
-  onAdd: (input: AddStoryInput) => void;
 }) {
-  const [form, setForm] = useState<AddStoryInput>(EMPTY_STORY);
-  const [errors, setErrors] = useState<StoryErrors>({});
-
-  function update<K extends keyof AddStoryInput>(key: K, value: string) {
-    setForm((prev) => ({ ...prev, [key]: value }));
-    setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const nextErrors: StoryErrors = {};
-    if (!form.title.trim()) nextErrors.title = "Give the story a short title.";
-    if (!form.userStory.trim()) {
-      nextErrors.userStory = "Add the user story the team will estimate.";
-    }
-    setErrors(nextErrors);
-    if (Object.values(nextErrors).some(Boolean)) return;
-
-    onAdd(form);
-    setForm(EMPTY_STORY);
-  }
-
   return (
     <div className="pb-12">
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-slate-50 p-6 text-center shadow-sm sm:p-10">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-          Host
+          SprintParty for ServiceNow
         </p>
         <h2 className="mt-1 text-2xl font-bold tracking-tight">
-          {hasHistory ? "Add the next story" : "Add your first story"}
+          {hasHistory ? "No more stories in this session" : "No stories yet"}
         </h2>
         <p className="mt-2 text-slate-600">
-          There&apos;s no story being estimated right now. Add one to open voting
-          for the team.
+          Stories are pulled from your ServiceNow backlog. Choose the ones your
+          team should refine next and add them to the Planning Queue.
         </p>
-
-        <form
-          onSubmit={handleSubmit}
-          noValidate
-          className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm sm:p-8"
+        <Link
+          href={withRoomParam("/servicenow/stories", roomSlug)}
+          className="mt-6 inline-flex rounded-xl bg-blue-600 px-6 py-3.5 font-semibold text-white hover:bg-blue-700"
         >
-          <div className="space-y-6 rounded-2xl bg-white p-5 shadow-sm sm:p-6">
-            <StoryField id="title" label="Story Title" required error={errors.title}>
-              <input
-                id="title"
-                type="text"
-                placeholder="e.g. Password reset flow"
-                value={form.title}
-                onChange={(event) => update("title", event.target.value)}
-                className={fieldClass(Boolean(errors.title))}
-              />
-            </StoryField>
-
-            <StoryField
-              id="userStory"
-              label="User Story"
-              required
-              error={errors.userStory}
-            >
-              <textarea
-                id="userStory"
-                rows={3}
-                placeholder="As a user, I want to reset my password so that I can regain access to my account."
-                value={form.userStory}
-                onChange={(event) => update("userStory", event.target.value)}
-                className={fieldClass(Boolean(errors.userStory))}
-              />
-            </StoryField>
-
-            <StoryField
-              id="acceptanceCriteria"
-              label="Acceptance Criteria"
-              hint="Optional — one item per line."
-            >
-              <textarea
-                id="acceptanceCriteria"
-                rows={4}
-                placeholder={
-                  "User can request a password reset via email\nReset link expires after 30 minutes\nUser can set a new password"
-                }
-                value={form.acceptanceCriteria}
-                onChange={(event) =>
-                  update("acceptanceCriteria", event.target.value)
-                }
-                className={fieldClass(false)}
-              />
-            </StoryField>
-          </div>
-
-          <button
-            type="submit"
-            className="mt-6 w-full rounded-xl bg-blue-600 px-6 py-4 text-base font-semibold text-white hover:bg-blue-700 sm:text-lg"
-          >
-            Add Story
-          </button>
-        </form>
+          Choose ServiceNow stories
+        </Link>
       </div>
     </div>
   );
@@ -496,10 +418,10 @@ function AddStoryView({
 
 function PlanningCompleteView({
   stories,
-  onAddAnother,
+  roomSlug,
 }: {
   stories: Story[];
-  onAddAnother: () => void;
+  roomSlug: string;
 }) {
   return (
     <div className="pb-12">
@@ -578,24 +500,17 @@ function PlanningCompleteView({
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={onAddAnother}
-          className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-        >
-          Add another story
-        </button>
         <Link
-          href="/servicenow/queue"
-          className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          href={withRoomParam("/servicenow/stories", roomSlug)}
+          className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
         >
-          Build a new queue
+          Add more ServiceNow stories
         </Link>
         <Link
-          href="/servicenow/stories"
-          className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+          href={withRoomParam("/servicenow/queue", roomSlug)}
+          className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
         >
-          Back to ServiceNow stories →
+          View Planning Queue
         </Link>
       </div>
     </div>
@@ -715,47 +630,3 @@ function VoteBadge({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-
-function fieldClass(hasError: boolean): string {
-  return [
-    "w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-900 outline-none",
-    "placeholder:text-slate-400 focus:ring-2 focus:ring-blue-200",
-    hasError
-      ? "border-red-400 focus:border-red-400"
-      : "border-slate-300 focus:border-blue-400",
-  ].join(" ");
-}
-
-function StoryField({
-  id,
-  label,
-  required = false,
-  hint,
-  error,
-  children,
-}: {
-  id: string;
-  label: string;
-  required?: boolean;
-  hint?: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label
-        htmlFor={id}
-        className="flex items-center gap-1 text-sm font-semibold text-slate-900"
-      >
-        {label}
-        {required && <span className="text-red-500">*</span>}
-      </label>
-      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
-      <div className="mt-2">{children}</div>
-      {error && (
-        <p className="mt-1.5 text-xs font-medium text-red-600">{error}</p>
-      )}
-    </div>
-  );
-}

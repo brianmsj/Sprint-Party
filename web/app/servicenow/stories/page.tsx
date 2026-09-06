@@ -14,6 +14,7 @@ import {
   loadQueue,
   subscribeQueue,
 } from "@/app/lib/planningQueue";
+import { readRoomParam, withRoomParam } from "@/app/lib/session";
 import { serviceNowStoryToQueued } from "@/app/lib/servicenow/adapter";
 import {
   isServiceNowError,
@@ -31,6 +32,8 @@ export default function ServiceNowStoriesPage() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<string | null>(null);
+  // Slug of the SprintParty session being built (from `?room=`), if any.
+  const [roomSlug] = useState<string | null>(() => readRoomParam());
 
   const queueCount = useSyncExternalStore(
     subscribeQueue,
@@ -100,8 +103,8 @@ export default function ServiceNowStoriesPage() {
     // and appends, so clicking twice never creates duplicates.
     const picked = state.stories.filter((story) => selected.has(story.sysId));
     addStoriesToQueue(picked.map(serviceNowStoryToQueued));
-    router.push("/servicenow/queue");
-  }, [router, selected, state]);
+    router.push(withRoomParam("/servicenow/queue", roomSlug));
+  }, [router, roomSlug, selected, state]);
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -153,7 +156,7 @@ export default function ServiceNowStoriesPage() {
             </p>
             {queueCount > 0 && (
               <Link
-                href="/servicenow/queue"
+                href={withRoomParam("/servicenow/queue", roomSlug)}
                 className="text-sm font-semibold text-blue-600 hover:text-blue-700"
               >
                 View Planning Queue ({queueCount}) →

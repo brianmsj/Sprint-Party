@@ -4,7 +4,14 @@ import { useState, useSyncExternalStore } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createRoom } from "@/app/lib/rooms";
+import {
+  addStories,
+  createRoom,
+  loadRoom,
+  roomLabel,
+  saveRoom,
+  type Room,
+} from "@/app/lib/rooms";
 import {
   clearQueue,
   loadQueue,
@@ -14,20 +21,15 @@ import {
   subscribeQueue,
   type QueuedStory,
 } from "@/app/lib/planningQueue";
-
-const HOST_NAME_KEY = "sprintparty:hostName";
+import {
+  readRoomParam,
+  readStoredHostName,
+  rememberHostName,
+  withRoomParam,
+} from "@/app/lib/session";
 
 /** Stable empty reference for the server snapshot of `useSyncExternalStore`. */
 const EMPTY: QueuedStory[] = [];
-
-function readStoredHostName(): string {
-  if (typeof window === "undefined") return "";
-  try {
-    return window.localStorage.getItem(HOST_NAME_KEY) ?? "";
-  } catch {
-    return "";
-  }
-}
 
 export default function PlanningQueuePage() {
   const router = useRouter();
@@ -44,27 +46,41 @@ export default function PlanningQueuePage() {
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // The SprintParty session this queue belongs to (created on `/create`).
+  const [roomSlug] = useState<string | null>(() => readRoomParam());
+  const [sessionRoom] = useState<Room | null>(() =>
+    roomSlug ? loadRoom(roomSlug) : null,
+  );
+
   function handleStart(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (queue.length === 0) return;
 
+    const inputs = queue.map(queuedStoryToAddStoryInput);
+
+    // Primary flow: a session room already exists — seed it, don't make a new one.
+    if (sessionRoom) {
+      setStarting(true);
+      saveRoom(addStories(sessionRoom, inputs));
+      clearQueue();
+      router.push(`/room/${sessionRoom.slug}`);
+      return;
+    }
+
+    // Fallback: queue reached directly with no session — create the room now.
     if (!hostName.trim()) {
       setError("Enter your name to host this SprintParty.");
       return;
     }
 
     setStarting(true);
-    try {
-      window.localStorage.setItem(HOST_NAME_KEY, hostName.trim());
-    } catch {
-      // Non-fatal — just means we can't prefill next time.
-    }
+    rememberHostName(hostName);
 
     const room = createRoom({
       hostName: hostName.trim(),
       roomName: "ServiceNow refinement",
       flow: "queue",
-      stories: queue.map(queuedStoryToAddStoryInput),
+      stories: inputs,
     });
 
     clearQueue();
@@ -73,7 +89,7 @@ export default function PlanningQueuePage() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
-      <WorkspaceHeader />
+      <WorkspaceHeader roomSlug={roomSlug} />
 
       <section className="mx-auto max-w-4xl px-6 py-10 lg:px-8">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -86,7 +102,7 @@ export default function PlanningQueuePage() {
         {!mounted ? (
           <p className="py-16 text-center text-slate-500">Loading queue…</p>
         ) : queue.length === 0 ? (
-          <EmptyQueue />
+          <EmptyQueue roomSlug={roomSlug} />
         ) : (
           <>
             <form
@@ -99,28 +115,43 @@ export default function PlanningQueuePage() {
                     {queue.length} {queue.length === 1 ? "story" : "stories"}{" "}
                     ready
                   </p>
-                  <label
-                    htmlFor="hostName"
-                    className="mt-3 block text-xs font-semibold text-slate-500"
-                  >
-                    Host name
-                  </label>
-                  <input
-                    id="hostName"
-                    type="text"
-                    autoComplete="name"
-                    placeholder="e.g. Brian"
-                    value={hostName}
-                    onChange={(event) => {
-                      setHostName(event.target.value);
-                      if (error) setError(null);
-                    }}
-                    className="mt-1 w-full max-w-xs rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
-                  />
-                  {error && (
-                    <p className="mt-1.5 text-xs font-medium text-red-600">
-                      {error}
+
+                  {sessionRoom ? (
+                    <p className="mt-2 text-xs text-slate-500">
+                      Starting in{" "}
+                      <span className="font-semibold text-slate-700">
+                        {roomLabel(sessionRoom)}
+                      </span>{" "}
+                      <span className="font-mono text-[11px] text-slate-400">
+                        ({sessionRoom.slug})
+                      </span>
                     </p>
+                  ) : (
+                    <>
+                      <label
+                        htmlFor="hostName"
+                        className="mt-3 block text-xs font-semibold text-slate-500"
+                      >
+                        Host name
+                      </label>
+                      <input
+                        id="hostName"
+                        type="text"
+                        autoComplete="name"
+                        placeholder="e.g. Brian"
+                        value={hostName}
+                        onChange={(event) => {
+                          setHostName(event.target.value);
+                          if (error) setError(null);
+                        }}
+                        className="mt-1 w-full max-w-xs rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
+                      />
+                      {error && (
+                        <p className="mt-1.5 text-xs font-medium text-red-600">
+                          {error}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -171,9 +202,9 @@ export default function PlanningQueuePage() {
             </ol>
 
             <p className="mt-4 text-xs text-slate-500">
-              Starting a SprintParty creates a room using the existing SprintParty
-              voting engine, seeded with these stories in this order. The queue is
-              cleared once the room opens.
+              Start SprintParty opens your session with these ServiceNow stories
+              active in this order, ready for Planning Poker and AI refinement.
+              The queue is cleared once the session opens.
             </p>
           </>
         )}
@@ -184,7 +215,7 @@ export default function PlanningQueuePage() {
 
 /* -------------------------------------------------------------------------- */
 
-function WorkspaceHeader() {
+function WorkspaceHeader({ roomSlug }: { roomSlug: string | null }) {
   return (
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-6 py-4 lg:px-8">
@@ -201,7 +232,7 @@ function WorkspaceHeader() {
           </span>
         </div>
         <Link
-          href="/servicenow/stories"
+          href={withRoomParam("/servicenow/stories", roomSlug)}
           className="text-sm text-slate-600 hover:text-slate-900"
         >
           ← Back to stories
@@ -211,7 +242,7 @@ function WorkspaceHeader() {
   );
 }
 
-function EmptyQueue() {
+function EmptyQueue({ roomSlug }: { roomSlug: string | null }) {
   return (
     <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
       <h2 className="text-lg font-semibold text-slate-900">
@@ -222,7 +253,7 @@ function EmptyQueue() {
         <span className="font-semibold">Add to Planning Queue</span>.
       </p>
       <Link
-        href="/servicenow/stories"
+        href={withRoomParam("/servicenow/stories", roomSlug)}
         className="mt-6 inline-flex rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700"
       >
         Browse ServiceNow stories
