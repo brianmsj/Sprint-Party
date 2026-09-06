@@ -7,8 +7,11 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AppShell } from "@/app/components/ui/AppShell";
+import { Button } from "@/app/components/ui/Button";
+import { Panel } from "@/app/components/ui/Panel";
+import { StatusPill, type PillTone } from "@/app/components/ui/StatusPill";
 import {
   addStoriesToQueue,
   loadQueue,
@@ -107,132 +110,108 @@ export default function ServiceNowStoriesPage() {
   }, [router, roomSlug, selected, state]);
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      {/* Workspace header */}
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-4 lg:px-8">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="text-lg font-bold tracking-tight text-slate-900"
-            >
-              SprintParty
-            </Link>
-            <span className="text-slate-300">/</span>
-            <span className="text-lg font-semibold text-slate-600">
-              SprintParty for ServiceNow
-            </span>
-          </div>
-
-          <span
-            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${connection.className}`}
-          >
-            <span
-              className={`h-2 w-2 rounded-full ${connection.dotClassName}`}
-              aria-hidden
-            />
+    <AppShell
+      breadcrumb="ServiceNow"
+      actions={
+        <>
+          <StatusPill tone={connection.tone} dot>
             {connection.label}
-          </span>
-        </div>
-      </header>
-
-      <section className="mx-auto max-w-6xl px-6 py-10 lg:px-8">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          </StatusPill>
+          {queueCount > 0 && (
+            <Button
+              href={withRoomParam("/servicenow/queue", roomSlug)}
+              variant="ghost"
+              size="sm"
+            >
+              Queue · {queueCount}
+            </Button>
+          )}
+        </>
+      }
+    >
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold tracking-tight">
           Choose stories to refine
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-          These Agile stories come straight from your ServiceNow{" "}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">
+        <p className="max-w-2xl text-sm leading-6 text-fg-muted">
+          Straight from your ServiceNow{" "}
+          <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-xs text-fg-secondary">
             rm_story
           </code>{" "}
           table. Select the ones your team should estimate next.
         </p>
+      </div>
 
-        {/* Selection toolbar */}
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
-          <div className="flex items-center gap-3">
-            <p className="text-sm font-semibold text-slate-700">
-              {selectedCount} {selectedCount === 1 ? "story" : "stories"} selected
-            </p>
-            {queueCount > 0 && (
-              <Link
-                href={withRoomParam("/servicenow/queue", roomSlug)}
-                className="text-sm font-semibold text-blue-600 hover:text-blue-700"
-              >
-                View Planning Queue ({queueCount}) →
-              </Link>
-            )}
-          </div>
-          <button
+      {/* Sticky selection toolbar */}
+      <div className="sticky top-14 z-30 -mx-5 mt-6 border-y border-line bg-bg-elevated/85 px-5 py-3 backdrop-blur-md lg:-mx-8 lg:px-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-fg-secondary">
+            <span className="font-medium text-fg">{selectedCount}</span>{" "}
+            {selectedCount === 1 ? "story" : "stories"} selected
+          </p>
+          <Button
             type="button"
+            variant="primary"
+            size="md"
+            glow={selectedCount > 0}
             disabled={selectedCount === 0}
             onClick={handleAddToQueue}
-            className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
           >
             Add to Planning Queue
-          </button>
+          </Button>
         </div>
+      </div>
 
-        <div className="mt-4">
-          {state.status === "loading" && <LoadingState />}
+      <div className="mt-4">
+        {state.status === "loading" && <LoadingState />}
 
-          {state.status === "error" && (
-            <ErrorState
-              message={state.message}
-              detail={state.detail}
-              code={state.code}
-              onRetry={() => void reload()}
-            />
-          )}
+        {state.status === "error" && (
+          <ErrorState
+            message={state.message}
+            detail={state.detail}
+            code={state.code}
+            onRetry={() => void reload()}
+          />
+        )}
 
-          {state.status === "ready" && stories.length === 0 && <EmptyState />}
+        {state.status === "ready" && stories.length === 0 && <EmptyState />}
 
-          {state.status === "ready" && stories.length > 0 && (
-            <StoryTable
-              stories={stories}
-              selected={selected}
-              expanded={expanded}
-              onToggleSelected={toggleSelected}
-              onToggleExpanded={(sysId) =>
-                setExpanded((prev) => (prev === sysId ? null : sysId))
-              }
-            />
-          )}
-        </div>
-      </section>
-    </main>
+        {state.status === "ready" && stories.length > 0 && (
+          <StoryList
+            stories={stories}
+            selected={selected}
+            expanded={expanded}
+            onToggleSelected={toggleSelected}
+            onToggleExpanded={(sysId) =>
+              setExpanded((prev) => (prev === sysId ? null : sysId))
+            }
+          />
+        )}
+      </div>
+    </AppShell>
   );
 }
 
 /* -------------------------------------------------------------------------- */
 
-function connectionFor(status: LoadState["status"]) {
+function connectionFor(status: LoadState["status"]): {
+  label: string;
+  tone: PillTone;
+} {
   switch (status) {
     case "ready":
-      return {
-        label: "ServiceNow Connected",
-        className: "bg-emerald-50 text-emerald-700",
-        dotClassName: "bg-emerald-500",
-      };
+      return { label: "Connected", tone: "success" };
     case "loading":
-      return {
-        label: "Connecting to ServiceNow…",
-        className: "bg-amber-50 text-amber-700",
-        dotClassName: "bg-amber-500",
-      };
+      return { label: "Connecting…", tone: "warning" };
     case "error":
     default:
-      return {
-        label: "ServiceNow Disconnected",
-        className: "bg-red-50 text-red-700",
-        dotClassName: "bg-red-500",
-      };
+      return { label: "Disconnected", tone: "danger" };
   }
 }
 
 /* -------------------------------------------------------------------------- */
 
-function StoryTable({
+function StoryList({
   stories,
   selected,
   expanded,
@@ -246,46 +225,31 @@ function StoryTable({
   onToggleExpanded: (sysId: string) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-      <table className="w-full border-collapse text-left text-sm">
-        <thead>
-          <tr className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <th scope="col" className="w-12 px-4 py-3">
-              <span className="sr-only">Select</span>
-            </th>
-            <th scope="col" className="w-40 px-4 py-3">
-              Number
-            </th>
-            <th scope="col" className="px-4 py-3">
-              Short Description
-            </th>
-            <th scope="col" className="w-36 px-4 py-3">
-              Points
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {stories.map((story) => {
-            const isOpen = expanded === story.sysId;
-            const isChecked = selected.has(story.sysId);
-            return (
-              <StoryRows
-                key={story.sysId || story.number}
-                story={story}
-                isOpen={isOpen}
-                isChecked={isChecked}
-                onToggleSelected={onToggleSelected}
-                onToggleExpanded={onToggleExpanded}
-              />
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <Panel className="overflow-hidden">
+      <div className="hidden grid-cols-[2.5rem_9rem_1fr_6rem] gap-3 border-b border-line px-4 py-2.5 text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-fg-muted sm:grid">
+        <span className="sr-only">Select</span>
+        <span aria-hidden />
+        <span>Number</span>
+        <span>Short description</span>
+        <span>Points</span>
+      </div>
+      <ul className="divide-y divide-line">
+        {stories.map((story) => (
+          <StoryRow
+            key={story.sysId || story.number}
+            story={story}
+            isOpen={expanded === story.sysId}
+            isChecked={selected.has(story.sysId)}
+            onToggleSelected={onToggleSelected}
+            onToggleExpanded={onToggleExpanded}
+          />
+        ))}
+      </ul>
+    </Panel>
   );
 }
 
-function StoryRows({
+function StoryRow({
   story,
   isOpen,
   isChecked,
@@ -299,82 +263,79 @@ function StoryRows({
   onToggleExpanded: (sysId: string) => void;
 }) {
   return (
-    <>
-      <tr
-        className={`cursor-pointer transition-colors hover:bg-slate-50 ${
-          isOpen ? "bg-slate-50" : ""
-        }`}
-        onClick={() => onToggleExpanded(story.sysId)}
-      >
-        <td className="px-4 py-3 align-top" onClick={(e) => e.stopPropagation()}>
+    <li
+      className={`transition-colors ${isChecked ? "bg-accent-soft/40" : "hover:bg-surface-hover"}`}
+    >
+      <div className="grid grid-cols-[2.5rem_1fr] items-start gap-3 px-4 py-3 sm:grid-cols-[2.5rem_9rem_1fr_6rem] sm:items-center">
+        <label className="flex h-full items-center pt-0.5 sm:pt-0">
           <input
             type="checkbox"
-            className="h-4 w-4 rounded border-slate-300 accent-blue-600"
+            className="h-4 w-4 rounded border-line-strong bg-bg accent-accent"
             checked={isChecked}
             onChange={() => onToggleSelected(story.sysId)}
             aria-label={`Select story ${story.number || story.shortDescription}`}
           />
-        </td>
-        <td className="px-4 py-3 align-top font-mono text-xs font-semibold text-slate-700">
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className={`text-slate-400 transition-transform ${
-                isOpen ? "rotate-90" : ""
-              }`}
-              aria-hidden
-            >
-              ▸
-            </span>
-            {story.number || "—"}
+        </label>
+
+        <button
+          type="button"
+          onClick={() => onToggleExpanded(story.sysId)}
+          aria-expanded={isOpen}
+          className="col-start-2 flex items-center gap-1.5 rounded-sm text-left font-mono text-xs text-fg-secondary sm:col-start-auto"
+        >
+          <span
+            className={`text-fg-faint transition-transform duration-150 ${isOpen ? "rotate-90" : ""}`}
+            aria-hidden
+          >
+            ›
           </span>
-        </td>
-        <td className="px-4 py-3 align-top font-medium text-slate-900">
+          {story.number || "—"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onToggleExpanded(story.sysId)}
+          className="col-start-2 rounded-sm text-left text-sm text-fg sm:col-start-auto"
+        >
           {story.shortDescription || (
-            <span className="text-slate-400">Untitled story</span>
+            <span className="text-fg-faint">Untitled story</span>
           )}
-        </td>
-        <td className="px-4 py-3 align-top">
+        </button>
+
+        <div className="col-start-2 sm:col-start-auto">
           {story.storyPoints === null ? (
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
-              Unestimated
-            </span>
+            <StatusPill tone="neutral">Unestimated</StatusPill>
           ) : (
-            <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
-              {story.storyPoints}
-            </span>
+            <StatusPill tone="accent">{story.storyPoints} pts</StatusPill>
           )}
-        </td>
-      </tr>
+        </div>
+      </div>
 
       {isOpen && (
-        <tr className="bg-slate-50">
-          <td colSpan={4} className="px-4 pb-5 pt-1">
-            <div className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2">
-              <DetailBlock title="Description" body={story.description} />
-              <DetailBlock
-                title="Acceptance Criteria"
-                body={story.acceptanceCriteria}
-              />
-            </div>
-          </td>
-        </tr>
+        <div className="grid gap-5 border-t border-line bg-bg/40 px-4 py-4 sm:grid-cols-2 sm:pl-[3.25rem]">
+          <DetailBlock title="Description" body={story.description} />
+          <DetailBlock
+            title="Acceptance criteria"
+            body={story.acceptanceCriteria}
+          />
+        </div>
       )}
-    </>
+    </li>
   );
 }
 
 function DetailBlock({ title, body }: { title: string; body: string }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+      <p className="text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-fg-muted">
         {title}
       </p>
       {body ? (
-        <p className="mt-1.5 whitespace-pre-line text-sm leading-6 text-slate-600">
+        <p className="mt-1.5 whitespace-pre-line text-sm leading-6 text-fg-secondary">
           {body}
         </p>
       ) : (
-        <p className="mt-1.5 text-sm text-slate-400">Not provided.</p>
+        <p className="mt-1.5 text-sm text-fg-faint">Not provided.</p>
       )}
     </div>
   );
@@ -384,37 +345,33 @@ function DetailBlock({ title, body }: { title: string; body: string }) {
 
 function LoadingState() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-      <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-        Loading stories from ServiceNow…
-      </div>
-      <ul className="divide-y divide-slate-100">
-        {Array.from({ length: 5 }).map((_, index) => (
+    <Panel className="overflow-hidden">
+      <ul className="divide-y divide-line">
+        {Array.from({ length: 6 }).map((_, index) => (
           <li key={index} className="flex items-center gap-4 px-4 py-4">
-            <span className="h-4 w-4 rounded bg-slate-200" />
-            <span className="h-4 w-24 rounded bg-slate-200" />
-            <span className="h-4 flex-1 rounded bg-slate-100" />
-            <span className="h-4 w-20 rounded bg-slate-200" />
+            <span className="h-4 w-4 shrink-0 rounded bg-surface-active" />
+            <span className="h-3.5 w-24 shrink-0 rounded bg-surface-active" />
+            <span className="h-3.5 flex-1 rounded bg-surface" />
+            <span className="h-3.5 w-16 shrink-0 rounded bg-surface-active" />
           </li>
         ))}
       </ul>
-    </div>
+    </Panel>
   );
 }
 
 function EmptyState() {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
-      <h2 className="text-lg font-semibold text-slate-900">No stories found</h2>
-      <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
-        SprintParty connected to ServiceNow successfully, but the{" "}
-        <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">
+    <Panel className="px-6 py-16 text-center">
+      <h2 className="text-sm font-semibold text-fg">No stories found</h2>
+      <p className="mx-auto mt-2 max-w-md text-sm text-fg-muted">
+        SprintParty reached ServiceNow, but{" "}
+        <code className="rounded bg-surface px-1.5 py-0.5 font-mono text-xs text-fg-secondary">
           rm_story
         </code>{" "}
-        table returned no records. Add some Agile stories in ServiceNow, then
-        refresh.
+        returned no records. Add Agile stories in ServiceNow, then refresh.
       </p>
-    </div>
+    </Panel>
   );
 }
 
@@ -430,26 +387,28 @@ function ErrorState({
   onRetry: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-red-200 bg-red-50 px-6 py-10 text-center">
-      <h2 className="text-lg font-semibold text-red-800">
+    <Panel tone="danger" className="px-6 py-10 text-center">
+      <h2 className="text-sm font-semibold text-danger">
         Couldn&apos;t load ServiceNow stories
       </h2>
-      <p className="mx-auto mt-2 max-w-lg text-sm text-red-700">{message}</p>
+      <p className="mx-auto mt-2 max-w-lg text-sm text-fg-secondary">{message}</p>
       {detail && (
-        <p className="mx-auto mt-2 max-w-lg text-xs text-red-600/80">{detail}</p>
+        <p className="mx-auto mt-2 max-w-lg text-xs text-fg-muted">{detail}</p>
       )}
       {code && (
-        <p className="mt-2 font-mono text-[11px] uppercase tracking-wide text-red-500">
+        <p className="mt-2 font-mono text-[0.6875rem] uppercase tracking-wide text-danger/80">
           {code}
         </p>
       )}
-      <button
+      <Button
         type="button"
+        variant="secondary"
+        size="sm"
         onClick={onRetry}
-        className="mt-5 rounded-xl border border-red-300 bg-white px-5 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100"
+        className="mt-5"
       >
         Try again
-      </button>
-    </div>
+      </Button>
+    </Panel>
   );
 }

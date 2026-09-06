@@ -1,26 +1,137 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   SprintParty design system
+   Premium developer-tool aesthetic: near-black surfaces, thin borders,
+   restrained electric-violet accent, generous whitespace. Dark-only.
+   ========================================================================== */
+
+@theme {
+  /* Surfaces --------------------------------------------------------------- */
+  --color-bg: #08080a; /* app background (near black) */
+  --color-bg-elevated: #0d0d10; /* raised sections / sticky header */
+  --color-surface: #121216; /* cards, panels */
+  --color-surface-hover: #17171c; /* hover state for interactive surfaces */
+  --color-surface-active: #1c1c22;
+
+  /* Borders (thin, subtle) ---------------------------------------------------*/
+  --color-line: #24242b; /* default hairline */
+  --color-line-strong: #34343d; /* inputs, secondary buttons, emphasis */
+
+  /* Text ---------------------------------------------------------------------*/
+  --color-fg: #f4f4f6; /* primary text, crisp near-white */
+  --color-fg-secondary: #bcbcc6; /* secondary copy (~12:1 on --bg) */
+  --color-fg-muted: #8a8a95; /* muted / meta (~5.6:1, AA) */
+  --color-fg-faint: #6c6c76; /* de-emphasised labels (~3.6:1, large/non-text) */
+
+  /* Accent — electric violet. Use sparingly. -------------------------------- */
+  --color-accent: #7c5cff;
+  --color-accent-hover: #8f74ff;
+  --color-accent-contrast: #ffffff;
+  --color-accent-soft: #16132a; /* accent-tinted fill on dark */
+  --color-accent-line: #3a2f6b; /* accent-tinted border */
+
+  /* Semantic -------------------------------------------------------------- */
+  --color-success: #3fb950;
+  --color-success-soft: #10231a;
+  --color-warning: #d8a017;
+  --color-warning-soft: #241d0d;
+  --color-danger: #f76a5f;
+  --color-danger-soft: #2a1512;
+
+  /* Radius — subtle -------------------------------------------------------- */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  /* Fonts --------------------------------------------------------------------*/
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+    Consolas, monospace;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-accent) 32%, transparent);
+    color: #fff;
+  }
+
+  /* Consistent, visible keyboard focus everywhere. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Tasteful custom scrollbar (WebKit) */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line-strong);
+    border-radius: 9999px;
+    border: 2px solid var(--color-bg);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-fg-faint);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Restrained accent glow — reserved for the single most important action
+     on a screen (e.g. Reveal Estimates, primary CTA). */
+  .sp-glow {
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--color-accent) 55%, transparent),
+      0 10px 40px -12px color-mix(in oklab, var(--color-accent) 60%, transparent);
+  }
+
+  /* Subtle top-lit panel sheen used on the flagship room surfaces. */
+  .sp-panel {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, #fff 3%, transparent),
+        transparent 120px
+      ),
+      var(--color-surface);
+  }
+}
+
+/* Honour reduced-motion: keep meaning, drop movement. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
