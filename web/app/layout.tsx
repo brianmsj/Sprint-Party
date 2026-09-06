@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SprintParty — Free Online Planning Poker",
+  title: "SprintParty — The AI-powered Scrum suite",
   description:
-    "Free Planning Poker for Agile teams. Create a room, share a link, vote privately, and reveal together. No signup required.",
+    "AI-assisted backlog refinement and Planning Poker for Jira, Azure DevOps, GitHub, and ServiceNow teams. Your development team's entire sprint, in one place.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -24,7 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex min-h-full flex-col bg-bg text-fg">{children}</body>
     </html>
   );
 }

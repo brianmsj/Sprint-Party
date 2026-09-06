@@ -1,201 +1,189 @@
-import Link from "next/link";
+import { Brand } from "@/app/components/Brand";
+import { Button } from "@/app/components/ui/Button";
+import { Footer } from "@/app/components/ui/AppShell";
+import { Eyebrow } from "@/app/components/ui/Panel";
+import { StatusPill } from "@/app/components/ui/StatusPill";
+
+const AVAILABLE = ["Refinement", "Planning Poker"];
+const UPCOMING = ["Sprint Planning", "Standups", "Retrospectives"];
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white text-slate-900">
-      <section className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
-        <nav className="flex items-center justify-between">
-          <div className="text-2xl font-bold tracking-tight">
-            SprintParty
-          </div>
-
-          <div className="hidden items-center gap-8 text-sm text-slate-600 md:flex">
-            <a href="#how-it-works" className="hover:text-slate-900">
+    <div className="flex min-h-screen flex-col bg-bg text-fg">
+      <header className="sticky top-0 z-40 border-b border-line bg-bg-elevated/80 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5 lg:px-8">
+          <Brand />
+          <div className="flex items-center gap-1.5">
+            <a
+              href="#how-it-works"
+              className="hidden rounded-md px-3 py-1.5 text-sm text-fg-secondary transition-colors hover:text-fg sm:inline-flex"
+            >
               How it works
             </a>
-            <a href="#features" className="hover:text-slate-900">
-              Features
-            </a>
-            <a href="#faq" className="hover:text-slate-900">
-              FAQ
-            </a>
-          </div>
-
-          <Link
-            href="/create"
-            className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
-          >
-            Create a Room
-          </Link>
-        </nav>
-
-        <div className="grid gap-14 py-20 lg:grid-cols-2 lg:items-center">
-          <div>
-            <div className="mb-5 inline-flex rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">
-              Free planning poker · No signup required
-            </div>
-
-            <h1 className="max-w-2xl text-5xl font-bold tracking-tight sm:text-6xl">
-              Planning poker your team will actually enjoy.
-            </h1>
-
-            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600">
-              Create a room, share a link, vote privately, reveal together, and
-              get an independent AI estimate with story points, effort,
-              reasoning, assumptions, and risks.
-            </p>
-
-            <div className="mt-8 flex flex-wrap gap-4">
-              <Link
-                href="/create"
-                className="rounded-xl bg-blue-600 px-6 py-3.5 font-semibold text-white hover:bg-blue-700"
-              >
-                Start a SprintParty
-              </Link>
-
-              <button className="rounded-xl border border-slate-300 px-6 py-3.5 font-semibold text-slate-700 hover:bg-slate-50">
-                See how it works
-              </button>
-            </div>
-
-            <p className="mt-4 text-sm text-slate-500">
-              No signup. No credit card. Just start estimating.
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
-            <div className="rounded-2xl bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    Room
-                  </p>
-                  <h2 className="mt-1 text-lg font-semibold">
-                    agile-fox-4821
-                  </h2>
-                </div>
-
-                <div className="text-sm text-emerald-600">● 4 participants</div>
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-slate-200 p-4">
-                <p className="text-sm font-semibold">User Story</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  As a user, I want to reset my password so that I can regain
-                  access to my account.
-                </p>
-
-                <p className="mt-4 text-sm font-semibold">
-                  Acceptance Criteria
-                </p>
-
-                <ul className="mt-2 space-y-1 text-sm text-slate-600">
-                  <li>• User can request a password reset via email</li>
-                  <li>• Reset link expires after 30 minutes</li>
-                  <li>• User can set a new password</li>
-                </ul>
-              </div>
-
-              <div className="mt-5 grid grid-cols-4 gap-3">
-                {[
-                  ["B", "Brian", "5"],
-                  ["K", "Krystle", "?"],
-                  ["C", "Cheese", "8"],
-                  ["AI", "AI", "…"],
-                ].map(([initial, name, vote]) => (
-                  <div
-                    key={name}
-                    className="rounded-2xl border border-slate-200 p-3"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
-                        {initial}
-                      </div>
-                      <span className="text-sm font-medium">{name}</span>
-                    </div>
-
-                    <div className="mt-4 rounded-xl bg-slate-100 py-4 text-center text-2xl font-bold">
-                      {vote}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 rounded-2xl bg-blue-50 p-4 text-center">
-                <p className="text-sm font-semibold text-blue-700">
-                  Votes are private
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Choose your estimate below
-                </p>
-              </div>
-
-              <div className="mt-4 grid grid-cols-8 gap-2">
-                {[1, 2, 3, 5, 8, 13, 21, "?"].map((point) => (
-                  <button
-                    key={point}
-                    className="rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold hover:border-blue-400 hover:bg-blue-50"
-                  >
-                    {point}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <Button href="/create" variant="primary" size="sm">
+              Start free
+            </Button>
           </div>
         </div>
-      </section>
+      </header>
 
-      <section
-        id="how-it-works"
-        className="border-t border-slate-100 bg-slate-50"
-      >
-        <div className="mx-auto max-w-7xl px-6 py-20 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold tracking-tight">
-              How SprintParty works
-            </h2>
-            <p className="mt-3 text-slate-600">
-              From user story to team estimate in seconds.
+      <main className="flex-1">
+        {/* Hero ------------------------------------------------------------ */}
+        <section className="mx-auto max-w-6xl px-5 pb-16 pt-20 lg:px-8 lg:pt-28">
+          <div className="mx-auto max-w-3xl text-center">
+            <StatusPill tone="accent" dot className="mx-auto">
+              AI-powered Scrum suite
+            </StatusPill>
+
+            <h1 className="mt-6 text-balance text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+              Your development team&apos;s entire sprint.
+              <span className="block text-fg-muted">One place.</span>
+            </h1>
+
+            <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-7 text-fg-secondary sm:text-lg">
+              The AI-powered Scrum suite for Jira, Azure DevOps, GitHub, and
+              ServiceNow teams.
             </p>
+
+            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Button href="/create" variant="primary" size="lg" glow>
+                Start free
+              </Button>
+              <Button href="#how-it-works" variant="secondary" size="lg">
+                Watch demo
+              </Button>
+            </div>
+
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-2 gap-y-2 text-sm">
+              {AVAILABLE.map((f) => (
+                <StatusPill key={f} tone="neutral">
+                  {f}
+                </StatusPill>
+              ))}
+              {UPCOMING.map((f) => (
+                <span
+                  key={f}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-line px-2 py-0.5 text-xs font-medium text-fg-faint"
+                >
+                  {f}
+                  <span className="text-[0.625rem] uppercase tracking-wide">
+                    soon
+                  </span>
+                </span>
+              ))}
+            </div>
           </div>
 
-          <div className="mt-12 grid gap-8 md:grid-cols-4">
-            {[
-              [
-                "1",
-                "Create a Room",
-                "Paste your story and acceptance criteria.",
-              ],
-              [
-                "2",
-                "Share the Link",
-                "Invite your team with a simple room URL.",
-              ],
-              [
-                "3",
-                "Vote Privately",
-                "Everyone picks a Fibonacci story-point estimate.",
-              ],
-              [
-                "4",
-                "Reveal + AI",
-                "Compare the team’s votes with an independent AI estimate.",
-              ],
-            ].map(([number, title, description]) => (
-              <div key={number}>
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700">
-                  {number}
-                </div>
+          {/* Restrained product preview */}
+          <div className="mx-auto mt-16 max-w-4xl">
+            <RoomPreview />
+          </div>
+        </section>
 
-                <h3 className="mt-4 font-semibold">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  {description}
-                </p>
+        {/* How it works ------------------------------------------------------ */}
+        <section
+          id="how-it-works"
+          className="border-t border-line bg-bg-elevated"
+        >
+          <div className="mx-auto max-w-6xl px-5 py-20 lg:px-8">
+            <Eyebrow>How it works</Eyebrow>
+            <h2 className="mt-2 max-w-xl text-2xl font-semibold tracking-tight">
+              From backlog to a shared estimate, without the busywork.
+            </h2>
+
+            <div className="mt-12 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                [
+                  "Connect the backlog",
+                  "Pull stories straight from ServiceNow — no re-typing tickets into another tool.",
+                ],
+                [
+                  "Build the queue",
+                  "Pick the stories for this session and order them the way you want to run them.",
+                ],
+                [
+                  "Refine with AI",
+                  "SprintParty AI flags what's unclear and what the team should discuss before voting.",
+                ],
+                [
+                  "Vote and reveal",
+                  "Private Fibonacci votes, revealed together. Re-round or move on in one click.",
+                ],
+              ].map(([title, body], i) => (
+                <div key={title}>
+                  <span className="font-mono text-xs text-accent">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <h3 className="mt-3 text-sm font-semibold text-fg">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-fg-muted">{body}</p>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-14 text-xs text-fg-faint">
+              Available today: {AVAILABLE.join(" · ")}. Sprint Planning,
+              Standups, and Retrospectives are on the roadmap.
+            </p>
+          </div>
+        </section>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+/** Static, monochrome mock of the room screen — sets visual expectations. */
+function RoomPreview() {
+  const deck = ["1", "2", "3", "5", "8", "13", "21", "?"];
+  return (
+    <div className="sp-panel overflow-hidden rounded-xl border border-line">
+      <div className="flex items-center justify-between border-b border-line px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-xs text-fg-muted">STRY0043122</span>
+          <StatusPill tone="warning" dot>
+            Needs clarification
+          </StatusPill>
+        </div>
+        <span className="font-mono text-xs text-fg-faint">Story 3 / 7</span>
+      </div>
+
+      <div className="grid gap-px bg-line sm:grid-cols-[1.1fr_1fr]">
+        <div className="bg-surface p-5">
+          <h3 className="text-base font-semibold tracking-tight">
+            Rate-limit the public webhook endpoint
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-fg-muted">
+            As a platform engineer, I want per-tenant rate limiting on
+            <span className="text-fg-secondary"> /v1/webhooks</span> so a single
+            noisy integration can&apos;t exhaust shared capacity.
+          </p>
+        </div>
+
+        <div className="bg-surface p-5">
+          <div className="grid grid-cols-4 gap-2">
+            {deck.map((c) => (
+              <div
+                key={c}
+                className={[
+                  "flex h-12 items-center justify-center rounded-md border font-mono text-sm",
+                  c === "5"
+                    ? "border-accent bg-accent-soft text-accent"
+                    : "border-line text-fg-secondary",
+                ].join(" ")}
+              >
+                {c}
               </div>
             ))}
           </div>
+          <div className="mt-4 flex items-center gap-2">
+            <div className="h-9 flex-1 rounded-md bg-accent/90" />
+            <div className="h-9 w-24 rounded-md border border-line-strong" />
+          </div>
         </div>
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }

@@ -1,10 +1,12 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Brand } from "@/app/components/Brand";
+import { AppShell } from "@/app/components/ui/AppShell";
 import { AiReviewPanel } from "@/app/components/AiReviewPanel";
+import { Button } from "@/app/components/ui/Button";
+import { Panel, Eyebrow } from "@/app/components/ui/Panel";
+import { StatusPill } from "@/app/components/ui/StatusPill";
 import { withRoomParam } from "@/app/lib/session";
 import {
   FIBONACCI_DECK,
@@ -60,30 +62,27 @@ export default function RoomPage() {
 
   if (!mounted) {
     return (
-      <Shell>
-        <p className="py-24 text-center text-slate-500">Loading room…</p>
-      </Shell>
+      <AppShell>
+        <p className="py-24 text-center text-sm text-fg-muted">Loading room…</p>
+      </AppShell>
     );
   }
 
   if (!room) {
     return (
-      <Shell>
-        <div className="py-24 text-center">
-          <h1 className="text-2xl font-bold tracking-tight">Room not found</h1>
-          <p className="mt-3 text-slate-600">
-            We couldn&apos;t find a room called{" "}
-            <span className="font-mono font-semibold">{slug}</span> in this
-            browser.
+      <AppShell>
+        <div className="mx-auto max-w-md py-24 text-center">
+          <h1 className="text-xl font-semibold tracking-tight">Room not found</h1>
+          <p className="mt-3 text-sm text-fg-muted">
+            No room called{" "}
+            <span className="font-mono text-fg-secondary">{slug}</span> exists in
+            this browser.
           </p>
-          <Link
-            href="/create"
-            className="mt-6 inline-flex rounded-xl bg-blue-600 px-6 py-3.5 font-semibold text-white hover:bg-blue-700"
-          >
-            Create a Room
-          </Link>
+          <Button href="/create" variant="primary" size="md" className="mt-6">
+            Create a session
+          </Button>
         </div>
-      </Shell>
+      </AppShell>
     );
   }
 
@@ -94,81 +93,70 @@ export default function RoomPage() {
   const hasMorePending = pendingStories(room).length > 1;
 
   return (
-    <Shell>
-      <header className="py-10">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-          Room
-        </p>
-        <div className="mt-1 flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            {roomLabel(room)}
-          </h1>
-          <span className="rounded-full bg-slate-100 px-3 py-1 font-mono text-xs font-semibold text-slate-500">
+    <AppShell
+      breadcrumb={roomLabel(room)}
+      actions={
+        <>
+          <StatusPill tone="neutral" className="hidden font-mono sm:inline-flex">
             {room.slug}
-          </span>
-          {room.flow === "queue" && (
-            <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
-              ServiceNow queue
+          </StatusPill>
+          <Button href="/create" variant="ghost" size="sm">
+            New
+          </Button>
+        </>
+      }
+    >
+      {/* Room meta strip */}
+      <div className="flex flex-wrap items-center gap-2 text-xs text-fg-muted">
+        {room.flow === "queue" && (
+          <StatusPill tone="accent">ServiceNow queue</StatusPill>
+        )}
+        <span>
+          {room.participants.length}{" "}
+          {room.participants.length === 1 ? "participant" : "participants"}
+        </span>
+        {history.length > 0 && (
+          <>
+            <span aria-hidden className="text-fg-faint">
+              ·
             </span>
-          )}
-          <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-            {room.participants.length}{" "}
-            {room.participants.length === 1 ? "participant" : "participants"}
-          </span>
-          {history.length > 0 && (
-            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-              {history.length} estimated
-            </span>
-          )}
-        </div>
-      </header>
+            <span>{history.length} estimated</span>
+          </>
+        )}
+      </div>
 
-      {story ? (
-        <ActiveStoryView
-          room={room}
-          story={story}
-          hasMorePending={hasMorePending}
-          onVote={(card) => mutateRoom((current) => setVote(current, HOST_ID, card))}
-          onToggleReveal={() =>
-            mutateRoom((current) => setRevealed(current, !story.revealed))
-          }
-          onNewRound={() => mutateRoom(resetActiveVotes)}
-          onNextStory={() => mutateRoom(completeActiveStory)}
-        />
-      ) : planningComplete ? (
-        <PlanningCompleteView stories={history} roomSlug={room.slug} />
-      ) : (
-        <EmptySessionView
-          roomSlug={room.slug}
-          hasHistory={history.length > 0}
-        />
-      )}
+      <div className="mt-6">
+        {story ? (
+          <ActiveStoryView
+            room={room}
+            story={story}
+            hasMorePending={hasMorePending}
+            onVote={(card) =>
+              mutateRoom((current) => setVote(current, HOST_ID, card))
+            }
+            onToggleReveal={() =>
+              mutateRoom((current) => setRevealed(current, !story.revealed))
+            }
+            onNewRound={() => mutateRoom(resetActiveVotes)}
+            onNextStory={() => mutateRoom(completeActiveStory)}
+          />
+        ) : planningComplete ? (
+          <PlanningCompleteView stories={history} roomSlug={room.slug} />
+        ) : (
+          <EmptySessionView
+            roomSlug={room.slug}
+            hasHistory={history.length > 0}
+          />
+        )}
+      </div>
 
       {history.length > 0 && !planningComplete && (
-        <HistoryList stories={history} participantCount={room.participants.length} />
+        <HistoryList
+          stories={history}
+          participantCount={room.participants.length}
+        />
       )}
-    </Shell>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-
-function Shell({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="min-h-screen bg-white text-slate-900">
-      <section className="mx-auto max-w-6xl px-6 py-8 lg:px-8">
-        <nav className="flex items-center justify-between">
-          <Brand />
-          <Link
-            href="/create"
-            className="text-sm text-slate-600 hover:text-slate-900"
-          >
-            New room
-          </Link>
-        </nav>
-        {children}
-      </section>
-    </main>
+    </AppShell>
   );
 }
 
@@ -196,181 +184,262 @@ function ActiveStoryView({
   const isQueue = room.flow === "queue";
   const position = storyPosition(room, story.id);
   const nextLabel =
-    isQueue && !hasMorePending ? "Finish & view summary →" : "Next Story →";
+    isQueue && !hasMorePending ? "Finish & view summary" : "Next story";
+
+  const votedCount = Object.keys(story.votes).length;
 
   return (
-    <div className="flex flex-col gap-8 pb-12 xl:flex-row xl:items-start">
-      <div className="grid flex-1 gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-start">
-      {/* Story details */}
-      <section className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm sm:p-6">
+    <div className="flex flex-col gap-6 pb-16">
+      {/* Prominent story header ------------------------------------------- */}
+      <div>
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Now estimating
-          </p>
-          {isQueue && (
-            <span className="text-xs font-semibold text-slate-400">
-              · Story {position.index} of {position.total}
-            </span>
-          )}
-        </div>
-
-        {story.origin.externalNumber && (
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="rounded-md bg-slate-900 px-2 py-0.5 font-mono text-xs font-semibold text-white">
+          {story.origin.externalNumber && (
+            <span className="font-mono text-sm font-medium text-accent">
               {story.origin.externalNumber}
             </span>
-            {story.origin.source === "servicenow" && (
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                ServiceNow
-              </span>
-            )}
-            {typeof story.origin.externalPoints === "number" && (
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
-                Source estimate: {story.origin.externalPoints}
-              </span>
-            )}
-          </div>
-        )}
-
-        <h2 className="mt-1 text-lg font-semibold">{story.title}</h2>
-
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-sm font-semibold">User Story</p>
-          <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
-            {story.userStory}
-          </p>
-
-          <p className="mt-4 text-sm font-semibold">Acceptance Criteria</p>
-          {lines.length > 0 ? (
-            <ul className="mt-2 space-y-1 text-sm text-slate-600">
-              {lines.map((line, index) => (
-                <li key={index}>• {line}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-2 text-sm text-slate-400">
-              No acceptance criteria provided.
-            </p>
+          )}
+          {story.origin.source === "servicenow" && (
+            <StatusPill tone="neutral">ServiceNow</StatusPill>
+          )}
+          {isQueue && (
+            <span className="text-xs text-fg-muted">
+              Story {position.index} of {position.total}
+            </span>
           )}
         </div>
-      </section>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+          {story.title}
+        </h1>
+      </div>
 
-      {/* Voting */}
-      <section className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm sm:p-6">
-        <div className="rounded-2xl bg-white p-5 shadow-sm">
-          <p className="text-sm font-semibold">Participants</p>
-          <div className="mt-3 space-y-3">
-            {room.participants.map((participant) => (
-              <div
-                key={participant.id}
-                className="flex items-center justify-between rounded-2xl border border-slate-200 p-3"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
-                    {initialsFor(participant.name)}
-                  </div>
-                  <span className="text-sm font-medium">{participant.name}</span>
-                  {participant.isHost && (
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
-                      Host
-                    </span>
-                  )}
-                </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+        {/* Primary column: context + voting --------------------------------- */}
+        <div className="flex min-w-0 flex-col gap-6">
+          {/* Story context — scannable */}
+          <Panel className="p-5">
+            <Eyebrow>User story</Eyebrow>
+            <p className="mt-2 whitespace-pre-line text-sm leading-6 text-fg-secondary">
+              {story.userStory || "—"}
+            </p>
 
-                <VoteBadge
-                  revealed={story.revealed}
-                  vote={story.votes[participant.id]}
-                />
+            <Eyebrow className="mt-5">Acceptance criteria</Eyebrow>
+            {lines.length > 0 ? (
+              <ul className="mt-2 space-y-1.5">
+                {lines.map((line, index) => (
+                  <li
+                    key={index}
+                    className="flex gap-2.5 text-sm leading-6 text-fg-secondary"
+                  >
+                    <span
+                      aria-hidden
+                      className="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-fg-faint"
+                    />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-fg-faint">
+                No acceptance criteria provided.
+              </p>
+            )}
+
+            {typeof story.origin.externalPoints === "number" && (
+              <p className="mt-5 text-xs text-fg-muted">
+                Source estimate:{" "}
+                <span className="font-mono text-fg-secondary">
+                  {story.origin.externalPoints}
+                </span>
+              </p>
+            )}
+          </Panel>
+
+          {/* Voting — the dominant surface */}
+          <Panel sheen className="p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <Eyebrow>{story.revealed ? "Estimates revealed" : "Voting"}</Eyebrow>
+                <p className="mt-1 text-sm text-fg-muted">
+                  {story.revealed
+                    ? "Discuss the spread, then re-round or move on."
+                    : "Pick your estimate. Votes stay hidden until reveal."}
+                </p>
               </div>
-            ))}
-          </div>
+              <span className="shrink-0 whitespace-nowrap font-mono text-xs text-fg-muted">
+                {votedCount}/{room.participants.length} voted
+              </span>
+            </div>
 
-          <div
-            className={`mt-5 rounded-2xl p-4 text-center ${
-              story.revealed ? "bg-emerald-50" : "bg-blue-50"
-            }`}
-          >
-            <p
-              className={`text-sm font-semibold ${
-                story.revealed ? "text-emerald-700" : "text-blue-700"
-              }`}
-            >
-              {story.revealed ? "Votes revealed" : "Votes are private"}
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              {story.revealed
-                ? "Discuss the spread, then run a new round or move on."
-                : "Choose your estimate below."}
-            </p>
-          </div>
+            {/* Fibonacci deck */}
+            <div className="mt-5 grid grid-cols-4 gap-2.5 sm:grid-cols-8">
+              {FIBONACCI_DECK.map((card) => {
+                const selected = hostVote === card;
+                return (
+                  <button
+                    key={card}
+                    type="button"
+                    onClick={() => onVote(card)}
+                    aria-pressed={selected}
+                    className={[
+                      "flex h-16 items-center justify-center rounded-lg border font-mono text-lg transition-[transform,background-color,border-color,color,box-shadow] duration-150 sm:h-20 sm:text-xl",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+                      selected
+                        ? "-translate-y-0.5 border-accent bg-accent-soft text-accent sp-glow"
+                        : "border-line bg-surface text-fg-secondary hover:-translate-y-0.5 hover:border-line-strong hover:bg-surface-hover hover:text-fg",
+                    ].join(" ")}
+                  >
+                    {card}
+                  </button>
+                );
+              })}
+            </div>
 
-          {story.revealed && <VoteSummary votes={story.votes} />}
+            {story.revealed && <VoteSummary votes={story.votes} />}
 
-          <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-8">
-            {FIBONACCI_DECK.map((card) => {
-              const selected = hostVote === card;
-              return (
-                <button
-                  key={card}
-                  type="button"
-                  onClick={() => onVote(card)}
-                  aria-pressed={selected}
-                  className={`rounded-xl border py-4 text-base font-bold transition-colors ${
-                    selected
-                      ? "border-blue-600 bg-blue-600 text-white"
-                      : "border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50"
-                  }`}
-                >
-                  {card}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-            <button
+            {/* Primary actions */}
+            <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                glow
+                fullWidth
+                onClick={onToggleReveal}
+              >
+                {story.revealed ? "Hide estimates" : "Reveal estimates"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                onClick={onNewRound}
+                className="sm:w-auto"
+              >
+                New round
+              </Button>
+            </div>
+            <Button
               type="button"
-              onClick={onToggleReveal}
-              className="flex-1 rounded-xl bg-blue-600 px-6 py-3.5 font-semibold text-white hover:bg-blue-700"
+              variant="ghost"
+              size="sm"
+              fullWidth
+              onClick={onNextStory}
+              className="mt-2"
             >
-              {story.revealed ? "Hide Votes" : "Reveal Votes"}
-            </button>
-            <button
-              type="button"
-              onClick={onNewRound}
-              className="flex-1 rounded-xl border border-slate-300 px-6 py-3.5 font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              New Round
-            </button>
-          </div>
+              {nextLabel} →
+            </Button>
 
-          <button
-            type="button"
-            onClick={onNextStory}
-            className="mt-3 w-full rounded-xl border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-          >
-            {nextLabel}
-          </button>
+            {/* Compact participant / vote progress */}
+            <div className="mt-6 border-t border-line pt-4">
+              <Eyebrow>Participants</Eyebrow>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {room.participants.map((participant) => (
+                  <ParticipantChip
+                    key={participant.id}
+                    name={participant.name}
+                    isHost={participant.isHost}
+                    revealed={story.revealed}
+                    vote={story.votes[participant.id]}
+                  />
+                ))}
+              </ul>
+            </div>
+          </Panel>
+
+          <p className="text-xs text-fg-faint">
+            {isQueue
+              ? "Next story advances automatically through the ServiceNow Planning Queue."
+              : "Voting runs locally in this browser. Realtime multiplayer is coming next."}
+          </p>
         </div>
 
-        <p className="mt-4 text-center text-xs text-slate-500">
-          {isQueue
-            ? "Next Story advances automatically through the ServiceNow Planning Queue."
-            : "Voting runs locally in this browser. Realtime multiplayer and an independent AI estimate are coming next."}
-        </p>
-      </section>
+        {/* Secondary column: AI assist ----------------------------------- */}
+        <div className="lg:sticky lg:top-[4.5rem]">
+          <AiReviewPanel
+            key={story.id}
+            number={story.origin.externalNumber ?? ""}
+            shortDescription={story.title}
+            description={story.userStory}
+            acceptanceCriteria={story.acceptanceCriteria}
+          />
+        </div>
       </div>
+    </div>
+  );
+}
 
-      {/* SprintParty AI: refinement assist. On-demand only — never auto-runs. */}
-      <div className="xl:w-[380px] xl:flex-shrink-0">
-        <AiReviewPanel
-          key={story.id}
-          number={story.origin.externalNumber ?? ""}
-          shortDescription={story.title}
-          description={story.userStory}
-          acceptanceCriteria={story.acceptanceCriteria}
+/* -------------------------------------------------------------------------- */
+
+function ParticipantChip({
+  name,
+  isHost,
+  revealed,
+  vote,
+}: {
+  name: string;
+  isHost: boolean;
+  revealed: boolean;
+  vote: FibonacciCard | undefined;
+}) {
+  return (
+    <li className="inline-flex items-center gap-2 rounded-md border border-line bg-surface py-1 pl-1 pr-2.5">
+      <span className="flex h-6 w-6 items-center justify-center rounded bg-surface-active text-[0.625rem] font-semibold text-fg-secondary">
+        {initialsFor(name)}
+      </span>
+      <span className="text-xs text-fg-secondary">{name}</span>
+      {isHost && (
+        <span className="text-[0.625rem] uppercase tracking-wide text-fg-faint">
+          host
+        </span>
+      )}
+      {revealed ? (
+        <span className="ml-0.5 font-mono text-sm font-medium text-fg">
+          {vote ?? "–"}
+        </span>
+      ) : (
+        <span
+          role="img"
+          aria-label={vote ? "voted" : "no vote yet"}
+          className={`ml-0.5 h-1.5 w-1.5 rounded-full ${
+            vote ? "bg-accent" : "bg-line-strong"
+          }`}
         />
-      </div>
+      )}
+    </li>
+  );
+}
+
+function VoteSummary({ votes }: { votes: Record<string, FibonacciCard> }) {
+  const counts = new Map<FibonacciCard, number>();
+  for (const vote of Object.values(votes)) {
+    counts.set(vote, (counts.get(vote) ?? 0) + 1);
+  }
+
+  const ordered = FIBONACCI_DECK.filter((card) => counts.has(card));
+  const consensus = voteConsensus(votes);
+
+  if (ordered.length === 0) {
+    return (
+      <p className="mt-4 text-center text-sm text-fg-faint">No votes to show.</p>
+    );
+  }
+
+  return (
+    <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+      {consensus && (
+        <StatusPill tone="success" dot>
+          Consensus · {consensus}
+        </StatusPill>
+      )}
+      {ordered.map((card) => (
+        <span
+          key={card}
+          className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 font-mono text-sm text-fg-secondary"
+        >
+          {card}
+          <span className="text-fg-faint">×{counts.get(card)}</span>
+        </span>
+      ))}
     </div>
   );
 }
@@ -391,26 +460,24 @@ function EmptySessionView({
   hasHistory: boolean;
 }) {
   return (
-    <div className="pb-12">
-      <div className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-slate-50 p-6 text-center shadow-sm sm:p-10">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-          SprintParty for ServiceNow
-        </p>
-        <h2 className="mt-1 text-2xl font-bold tracking-tight">
-          {hasHistory ? "No more stories in this session" : "No stories yet"}
-        </h2>
-        <p className="mt-2 text-slate-600">
-          Stories are pulled from your ServiceNow backlog. Choose the ones your
-          team should refine next and add them to the Planning Queue.
-        </p>
-        <Link
-          href={withRoomParam("/servicenow/stories", roomSlug)}
-          className="mt-6 inline-flex rounded-xl bg-blue-600 px-6 py-3.5 font-semibold text-white hover:bg-blue-700"
-        >
-          Choose ServiceNow stories
-        </Link>
-      </div>
-    </div>
+    <Panel className="mx-auto max-w-lg px-6 py-14 text-center">
+      <Eyebrow>SprintParty for ServiceNow</Eyebrow>
+      <h2 className="mt-2 text-xl font-semibold tracking-tight">
+        {hasHistory ? "No more stories in this session" : "No stories yet"}
+      </h2>
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-fg-muted">
+        Stories are pulled from your ServiceNow backlog. Choose the ones your
+        team should refine next and add them to the Planning Queue.
+      </p>
+      <Button
+        href={withRoomParam("/servicenow/stories", roomSlug)}
+        variant="primary"
+        size="md"
+        className="mt-6"
+      >
+        Choose ServiceNow stories
+      </Button>
+    </Panel>
   );
 }
 
@@ -424,94 +491,93 @@ function PlanningCompleteView({
   roomSlug: string;
 }) {
   return (
-    <div className="pb-12">
-      <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-center sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
-          SprintParty
-        </p>
-        <h2 className="mt-1 text-2xl font-bold tracking-tight text-emerald-900">
+    <div className="pb-16">
+      <Panel tone="success" className="px-6 py-8 text-center">
+        <StatusPill tone="success" dot className="mx-auto">
           Planning complete
-        </h2>
-        <p className="mt-2 text-sm text-emerald-800">
+        </StatusPill>
+        <p className="mx-auto mt-3 max-w-md text-sm text-fg-secondary">
           Every story from the ServiceNow Planning Queue has been estimated.
         </p>
-      </div>
+      </Panel>
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <table className="w-full border-collapse text-left text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <th scope="col" className="w-36 px-4 py-3">
-                Number
-              </th>
-              <th scope="col" className="px-4 py-3">
-                Short Description
-              </th>
-              <th scope="col" className="w-28 px-4 py-3">
-                Source pts
-              </th>
-              <th scope="col" className="w-56 px-4 py-3">
-                Team result
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {stories.map((story) => {
-              const votes = Object.values(story.votes);
-              const consensus = voteConsensus(story.votes);
-              return (
-                <tr key={story.id} className="align-top">
-                  <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-700">
-                    {story.origin.externalNumber || "—"}
-                  </td>
-                  <td className="px-4 py-3 font-medium text-slate-900">
-                    {story.title}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {typeof story.origin.externalPoints === "number"
-                      ? story.origin.externalPoints
-                      : "Unestimated"}
-                  </td>
-                  <td className="px-4 py-3">
-                    {votes.length === 0 ? (
-                      <span className="text-slate-400">No votes</span>
-                    ) : consensus ? (
-                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
-                        Consensus {consensus}
-                      </span>
-                    ) : (
-                      <span className="flex flex-wrap gap-1">
-                        {votes.map((vote, index) => (
-                          <span
-                            key={index}
-                            className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700"
-                          >
-                            {vote}
-                          </span>
-                        ))}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <Panel className="mt-6 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
+            <thead>
+              <tr className="border-b border-line text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-fg-muted">
+                <th scope="col" className="w-36 px-4 py-2.5 font-medium">
+                  Number
+                </th>
+                <th scope="col" className="px-4 py-2.5 font-medium">
+                  Short description
+                </th>
+                <th scope="col" className="w-28 px-4 py-2.5 font-medium">
+                  Source pts
+                </th>
+                <th scope="col" className="w-52 px-4 py-2.5 font-medium">
+                  Team result
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {stories.map((story) => {
+                const votes = Object.values(story.votes);
+                const consensus = voteConsensus(story.votes);
+                return (
+                  <tr key={story.id} className="align-top">
+                    <td className="px-4 py-3 font-mono text-xs text-fg-muted">
+                      {story.origin.externalNumber || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-fg">{story.title}</td>
+                    <td className="px-4 py-3 text-fg-muted">
+                      {typeof story.origin.externalPoints === "number"
+                        ? story.origin.externalPoints
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      {votes.length === 0 ? (
+                        <span className="text-fg-faint">No votes</span>
+                      ) : consensus ? (
+                        <StatusPill tone="success">
+                          Consensus {consensus}
+                        </StatusPill>
+                      ) : (
+                        <span className="flex flex-wrap gap-1">
+                          {votes.map((vote, index) => (
+                            <span
+                              key={index}
+                              className="rounded border border-line bg-surface px-1.5 py-0.5 font-mono text-xs text-fg-secondary"
+                            >
+                              {vote}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
-        <Link
+      <div className="mt-6 flex flex-wrap items-center gap-2.5">
+        <Button
           href={withRoomParam("/servicenow/stories", roomSlug)}
-          className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+          variant="primary"
+          size="md"
         >
           Add more ServiceNow stories
-        </Link>
-        <Link
+        </Button>
+        <Button
           href={withRoomParam("/servicenow/queue", roomSlug)}
-          className="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          variant="secondary"
+          size="md"
         >
           View Planning Queue
-        </Link>
+        </Button>
       </div>
     </div>
   );
@@ -527,46 +593,42 @@ function HistoryList({
   participantCount: number;
 }) {
   return (
-    <section className="border-t border-slate-100 pb-20 pt-10">
-      <h2 className="text-lg font-semibold">Room history</h2>
-      <p className="mt-1 text-sm text-slate-500">
-        Stories this room has already estimated.
-      </p>
+    <section className="mt-12 border-t border-line pb-8 pt-8">
+      <Eyebrow>Session history</Eyebrow>
+      <h2 className="mt-2 text-base font-semibold text-fg">
+        Stories already estimated
+      </h2>
 
-      <ul className="mt-5 space-y-3">
+      <ul className="mt-4 divide-y divide-line overflow-hidden rounded-xl border border-line">
         {stories
           .slice()
           .reverse()
           .map((story) => {
             const votes = Object.values(story.votes);
+            const consensus = voteConsensus(story.votes);
             return (
               <li
                 key={story.id}
-                className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                className="flex items-center gap-3 bg-surface px-4 py-3"
               >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold">{story.title}</p>
-                  <span className="text-xs text-slate-500">
-                    {votes.length}/{participantCount} voted
+                {story.origin.externalNumber && (
+                  <span className="hidden shrink-0 font-mono text-xs text-fg-muted sm:inline">
+                    {story.origin.externalNumber}
                   </span>
-                </div>
-                {story.userStory && (
-                  <p className="mt-1 line-clamp-2 whitespace-pre-line text-sm text-slate-600">
-                    {story.userStory}
-                  </p>
                 )}
-                {votes.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {votes.map((vote, index) => (
-                      <span
-                        key={index}
-                        className="rounded-lg bg-white px-2 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200"
-                      >
-                        {vote}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                <span className="truncate text-sm text-fg">{story.title}</span>
+                <span className="ml-auto shrink-0 text-xs text-fg-faint">
+                  {votes.length}/{participantCount}
+                </span>
+                {consensus ? (
+                  <StatusPill tone="success" className="shrink-0">
+                    {consensus}
+                  </StatusPill>
+                ) : votes.length > 0 ? (
+                  <StatusPill tone="neutral" className="shrink-0">
+                    split
+                  </StatusPill>
+                ) : null}
               </li>
             );
           })}
@@ -574,59 +636,3 @@ function HistoryList({
     </section>
   );
 }
-
-/* -------------------------------------------------------------------------- */
-
-function VoteSummary({ votes }: { votes: Record<string, FibonacciCard> }) {
-  const counts = new Map<FibonacciCard, number>();
-  for (const vote of Object.values(votes)) {
-    counts.set(vote, (counts.get(vote) ?? 0) + 1);
-  }
-
-  const ordered = FIBONACCI_DECK.filter((card) => counts.has(card));
-  if (ordered.length === 0) {
-    return (
-      <p className="mt-4 text-center text-sm text-slate-400">No votes to show.</p>
-    );
-  }
-
-  return (
-    <div className="mt-4 flex flex-wrap justify-center gap-2">
-      {ordered.map((card) => (
-        <span
-          key={card}
-          className="rounded-xl bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700"
-        >
-          {card} × {counts.get(card)}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function VoteBadge({
-  revealed,
-  vote,
-}: {
-  revealed: boolean;
-  vote: FibonacciCard | undefined;
-}) {
-  if (revealed) {
-    return (
-      <div className="flex h-9 min-w-9 items-center justify-center rounded-xl bg-slate-100 px-3 text-lg font-bold">
-        {vote ?? "–"}
-      </div>
-    );
-  }
-
-  return (
-    <span
-      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-        vote ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400"
-      }`}
-    >
-      {vote ? "Voted" : "No vote yet"}
-    </span>
-  );
-}
-

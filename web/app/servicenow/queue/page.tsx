@@ -2,8 +2,12 @@
 
 import { useState, useSyncExternalStore } from "react";
 import type { FormEvent } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AppShell } from "@/app/components/ui/AppShell";
+import { Button } from "@/app/components/ui/Button";
+import { Field, inputClassName } from "@/app/components/ui/Field";
+import { Panel } from "@/app/components/ui/Panel";
+import { StatusPill } from "@/app/components/ui/StatusPill";
 import {
   addStories,
   createRoom,
@@ -88,96 +92,95 @@ export default function PlanningQueuePage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <WorkspaceHeader roomSlug={roomSlug} />
-
-      <section className="mx-auto max-w-4xl px-6 py-10 lg:px-8">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          Planning Queue
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-          Choose the stories your team will refine in this SprintParty.
+    <AppShell
+      breadcrumb="ServiceNow"
+      actions={
+        <Button
+          href={withRoomParam("/servicenow/stories", roomSlug)}
+          variant="ghost"
+          size="sm"
+        >
+          Back to stories
+        </Button>
+      }
+    >
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold tracking-tight">Planning Queue</h1>
+        <p className="max-w-2xl text-sm leading-6 text-fg-muted">
+          Order the stories your team will refine in this session. Start when
+          you&apos;re ready.
         </p>
+      </div>
 
-        {!mounted ? (
-          <p className="py-16 text-center text-slate-500">Loading queue…</p>
-        ) : queue.length === 0 ? (
-          <EmptyQueue roomSlug={roomSlug} />
-        ) : (
-          <>
-            <form
-              onSubmit={handleStart}
-              className="mt-6 rounded-2xl border border-slate-200 bg-white p-4"
-            >
-              <div className="flex flex-wrap items-end justify-between gap-4">
-                <div className="flex-1 min-w-[220px]">
-                  <p className="text-sm font-semibold text-slate-700">
-                    {queue.length} {queue.length === 1 ? "story" : "stories"}{" "}
-                    ready
-                  </p>
-
-                  {sessionRoom ? (
-                    <p className="mt-2 text-xs text-slate-500">
-                      Starting in{" "}
-                      <span className="font-semibold text-slate-700">
-                        {roomLabel(sessionRoom)}
-                      </span>{" "}
-                      <span className="font-mono text-[11px] text-slate-400">
-                        ({sessionRoom.slug})
-                      </span>
-                    </p>
-                  ) : (
-                    <>
-                      <label
-                        htmlFor="hostName"
-                        className="mt-3 block text-xs font-semibold text-slate-500"
-                      >
-                        Host name
-                      </label>
-                      <input
-                        id="hostName"
-                        type="text"
-                        autoComplete="name"
-                        placeholder="e.g. Brian"
-                        value={hostName}
-                        onChange={(event) => {
-                          setHostName(event.target.value);
-                          if (error) setError(null);
-                        }}
-                        className="mt-1 w-full max-w-xs rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
-                      />
-                      {error && (
-                        <p className="mt-1.5 text-xs font-medium text-red-600">
-                          {error}
-                        </p>
-                      )}
-                    </>
-                  )}
+      {!mounted ? (
+        <p className="py-16 text-center text-sm text-fg-muted">Loading queue…</p>
+      ) : queue.length === 0 ? (
+        <EmptyQueue roomSlug={roomSlug} />
+      ) : (
+        <form onSubmit={handleStart} className="mt-6">
+          {/* Start bar */}
+          <Panel className="flex flex-wrap items-center justify-between gap-4 p-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-fg">
+                {queue.length} {queue.length === 1 ? "story" : "stories"} ready
+              </p>
+              {sessionRoom ? (
+                <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-fg-muted">
+                  Starting in
+                  <span className="text-fg-secondary">
+                    {roomLabel(sessionRoom)}
+                  </span>
+                  <span className="font-mono text-fg-faint">
+                    {sessionRoom.slug}
+                  </span>
+                </p>
+              ) : (
+                <div className="mt-2 max-w-xs">
+                  <Field id="hostName" label="Host name" error={error ?? undefined}>
+                    <input
+                      id="hostName"
+                      type="text"
+                      autoComplete="name"
+                      placeholder="e.g. Brian"
+                      value={hostName}
+                      onChange={(event) => {
+                        setHostName(event.target.value);
+                        if (error) setError(null);
+                      }}
+                      className={inputClassName(Boolean(error))}
+                    />
+                  </Field>
                 </div>
+              )}
+            </div>
 
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      clearQueue();
-                      setExpanded(null);
-                    }}
-                    className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-                  >
-                    Clear queue
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={starting || queue.length === 0}
-                    className="rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
-                  >
-                    {starting ? "Starting…" : "Start SprintParty"}
-                  </button>
-                </div>
-              </div>
-            </form>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="danger"
+                size="md"
+                onClick={() => {
+                  clearQueue();
+                  setExpanded(null);
+                }}
+              >
+                Clear queue
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                glow
+                disabled={starting || queue.length === 0}
+              >
+                {starting ? "Starting…" : "Start SprintParty"}
+              </Button>
+            </div>
+          </Panel>
 
-            <ol className="mt-6 space-y-3">
+          {/* Ordered story rows — compact list, hairline dividers */}
+          <Panel className="mt-4 overflow-hidden">
+            <ol className="divide-y divide-line">
               {queue.map((story, index) => (
                 <QueueRow
                   key={story.key}
@@ -200,65 +203,37 @@ export default function PlanningQueuePage() {
                 />
               ))}
             </ol>
+          </Panel>
 
-            <p className="mt-4 text-xs text-slate-500">
-              Start SprintParty opens your session with these ServiceNow stories
-              active in this order, ready for Planning Poker and AI refinement.
-              The queue is cleared once the session opens.
-            </p>
-          </>
-        )}
-      </section>
-    </main>
+          <p className="mt-3 text-xs text-fg-faint">
+            Start SprintParty opens your session with these stories active in
+            this order. The queue is cleared once the session opens.
+          </p>
+        </form>
+      )}
+    </AppShell>
   );
 }
 
 /* -------------------------------------------------------------------------- */
 
-function WorkspaceHeader({ roomSlug }: { roomSlug: string | null }) {
-  return (
-    <header className="border-b border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-6 py-4 lg:px-8">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="text-lg font-bold tracking-tight text-slate-900"
-          >
-            SprintParty
-          </Link>
-          <span className="text-slate-300">/</span>
-          <span className="text-lg font-semibold text-slate-600">
-            SprintParty for ServiceNow
-          </span>
-        </div>
-        <Link
-          href={withRoomParam("/servicenow/stories", roomSlug)}
-          className="text-sm text-slate-600 hover:text-slate-900"
-        >
-          ← Back to stories
-        </Link>
-      </div>
-    </header>
-  );
-}
-
 function EmptyQueue({ roomSlug }: { roomSlug: string | null }) {
   return (
-    <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
-      <h2 className="text-lg font-semibold text-slate-900">
-        Your planning queue is empty
-      </h2>
-      <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
-        Pick some stories from ServiceNow and choose{" "}
-        <span className="font-semibold">Add to Planning Queue</span>.
+    <Panel className="mt-6 px-6 py-16 text-center">
+      <h2 className="text-sm font-semibold text-fg">Your queue is empty</h2>
+      <p className="mx-auto mt-2 max-w-md text-sm text-fg-muted">
+        Pick stories from ServiceNow and choose{" "}
+        <span className="text-fg-secondary">Add to Planning Queue</span>.
       </p>
-      <Link
+      <Button
         href={withRoomParam("/servicenow/stories", roomSlug)}
-        className="mt-6 inline-flex rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+        variant="primary"
+        size="md"
+        className="mt-6"
       >
         Browse ServiceNow stories
-      </Link>
-    </div>
+      </Button>
+    </Panel>
   );
 }
 
@@ -286,66 +261,57 @@ function QueueRow({
   onRemove: () => void;
 }) {
   return (
-    <li className="rounded-2xl border border-slate-200 bg-white">
-      <div className="flex items-start gap-3 p-4">
-        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">
+    <li className="transition-colors hover:bg-surface-hover">
+      <div className="flex items-center gap-3 px-3 py-2.5 sm:px-4">
+        <span className="w-5 shrink-0 text-center font-mono text-xs text-fg-faint">
           {position}
         </span>
 
         <button
           type="button"
           onClick={onToggle}
-          className="min-w-0 flex-1 text-left"
           aria-expanded={isOpen}
+          className="flex min-w-0 flex-1 items-center gap-2.5 rounded-sm py-1 text-left"
         >
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-xs font-semibold text-slate-500">
-              {story.externalNumber || "—"}
-            </span>
-            {story.storyPoints === null ? (
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
-                Unestimated
-              </span>
-            ) : (
-              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-700">
-                {story.storyPoints} pts
-              </span>
-            )}
+          <span className="hidden shrink-0 font-mono text-xs text-fg-muted sm:inline">
+            {story.externalNumber || "—"}
           </span>
-          <span className="mt-1 block font-medium text-slate-900">
+          <span className="truncate text-sm text-fg">
             {story.title || "Untitled story"}
           </span>
-          <span className="mt-1 text-xs text-slate-400">
-            {isOpen ? "Hide details" : "Show details"}
+          {story.storyPoints !== null && (
+            <StatusPill tone="neutral" className="shrink-0">
+              {story.storyPoints} pts
+            </StatusPill>
+          )}
+          <span
+            className={`ml-auto shrink-0 text-fg-faint transition-transform duration-150 ${isOpen ? "rotate-90" : ""}`}
+            aria-hidden
+          >
+            ›
           </span>
         </button>
 
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center">
           <IconButton label="Move up" disabled={isFirst} onClick={onMoveUp}>
             ↑
           </IconButton>
           <IconButton label="Move down" disabled={isLast} onClick={onMoveDown}>
             ↓
           </IconButton>
-          <button
-            type="button"
-            onClick={onRemove}
-            className="ml-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-500 hover:border-red-300 hover:bg-red-50 hover:text-red-600"
-          >
-            Remove
-          </button>
+          <IconButton label="Remove from queue" onClick={onRemove} danger>
+            ✕
+          </IconButton>
         </div>
       </div>
 
       {isOpen && (
-        <div className="border-t border-slate-100 px-4 py-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <DetailBlock title="Description" body={story.description} />
-            <DetailBlock
-              title="Acceptance Criteria"
-              body={story.acceptanceCriteria}
-            />
-          </div>
+        <div className="grid gap-5 border-t border-line bg-bg/40 px-4 py-4 sm:grid-cols-2 sm:pl-12">
+          <DetailBlock title="Description" body={story.description} />
+          <DetailBlock
+            title="Acceptance criteria"
+            body={story.acceptanceCriteria}
+          />
         </div>
       )}
     </li>
@@ -354,12 +320,14 @@ function QueueRow({
 
 function IconButton({
   label,
-  disabled,
+  disabled = false,
+  danger = false,
   onClick,
   children,
 }: {
   label: string;
-  disabled: boolean;
+  disabled?: boolean;
+  danger?: boolean;
   onClick: () => void;
   children: React.ReactNode;
 }) {
@@ -369,7 +337,9 @@ function IconButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-30"
+      className={`flex h-8 w-8 items-center justify-center rounded-md text-sm text-fg-muted transition-colors hover:bg-surface-active hover:text-fg disabled:pointer-events-none disabled:opacity-25 ${
+        danger ? "hover:bg-danger-soft hover:text-danger" : ""
+      }`}
     >
       {children}
     </button>
@@ -379,15 +349,15 @@ function IconButton({
 function DetailBlock({ title, body }: { title: string; body: string }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+      <p className="text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-fg-muted">
         {title}
       </p>
       {body ? (
-        <p className="mt-1.5 whitespace-pre-line text-sm leading-6 text-slate-600">
+        <p className="mt-1.5 whitespace-pre-line text-sm leading-6 text-fg-secondary">
           {body}
         </p>
       ) : (
-        <p className="mt-1.5 text-sm text-slate-400">Not provided.</p>
+        <p className="mt-1.5 text-sm text-fg-faint">Not provided.</p>
       )}
     </div>
   );
